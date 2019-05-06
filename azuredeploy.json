@@ -41,7 +41,7 @@
   },
 
   "variables": {
-    "windowsOSVersion": "2019-Datacenter",
+    "windowsOSVersion": "2016-Datacenter",
     "imagePublisher": "MicrosoftWindowsServer",
     "imageOffer": "WindowsServer",
     "OSDiskName": "[concat(parameters('VMName'),'_osdisk')]",
