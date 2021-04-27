@@ -1,0 +1,73 @@
+version: "3.3"
+
+services:
+
+  traefik:
+    image: "traefik:v2.4"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.myresolver.acme.email=jahresheft@waldorfschule-erlangen.de"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  whoami:
+    image: "traefik/whoami"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`portainer.jh2021.online`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls.certresolver=myresolver"
+  board:
+    image: restyaplatform/restyaboard:dev
+    #ports:
+    #  - "1234:80"
+    volumes:
+      - ./restya/media:/var/lib/nginx/html/media
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_ADMIN_USER=postgres
+      - POSTGRES_ADMIN_PASS=CHANGEME
+      - RESTYA_DB_USERNAME=restya
+      - RESTYA_DB_USERPASS=CHANGEME
+      #- RESTYA_DB=restyaboard
+      #- SMTP_SERVER=smtp_relay
+      #- SMTP_PORT=587
+      #- TZ=Etc/UTC
+    depends_on:
+      - postgres
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.board.rule=Host(`board.jh2021.online`)"
+      - "traefik.http.routers.board.entrypoints=websecure"
+      - "traefik.http.routers.board.tls.certresolver=myresolver"
+
+  # See https://hub.docker.com/r/boky/postfix for documentation
+  # or try https://github.com/WeAreGenki/docker-smtp
+  #smtp_relay:
+  #  image: boky/postfix
+  #  environment:
+  #    - RELAYHOST=<Replace_Public_Instance_IP>:1587
+  #    - ALLOW_EMPTY_SENDER_DOMAINS=true
+
+  postgres:
+    image: postgres:12-alpine
+    volumes:
+      - ./restya/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=CHANGEME
+    restart: always
